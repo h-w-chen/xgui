@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/color"
 	"log"
-	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/keybind"
@@ -14,6 +13,8 @@ import (
 	"github.com/BurntSushi/xgbutil/xgraphics"
 
 	"github.com/BurntSushi/xgbutil"
+
+	"./web"
 )
 
 var (
@@ -22,8 +23,6 @@ var (
 	co     = color.RGBA{0, 200, 0, 0}
 	bg     = xgraphics.BGRA{R: 0x0, G: 0x0, B: 0x0, A: 0xff}
 
-	ticker = time.NewTicker(20 * time.Millisecond)
-	value  = 0
 	x      = 0
 	boundX = width - 1
 	boundY = height - 1
@@ -31,13 +30,6 @@ var (
 
 // type of function to get next Y value to draw
 type getYToDraw func() int
-
-func getYOnTicker() int {
-	<-ticker.C
-	y := value
-	value++
-	return y
-}
 
 func drawY(y int, canvas *xgraphics.Image, winID xproto.Window) {
 	if y > boundY {
@@ -74,11 +66,15 @@ func main() {
 	win := canvas.XShowExtra("X11-GUI", true)
 	win.Listen(xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskKeyPress)
 
+	go func() {
+		web.StartServer(8777)
+	}()
+
 	go func(op getYToDraw) {
 		for {
 			drawY(op(), canvas, win.Id)
 		}
-	}(getYOnTicker)
+	}(web.GetYOnPort)
 
 	xevent.Main(X)
 
