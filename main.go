@@ -17,29 +17,35 @@ import (
 )
 
 var (
-	width  = 500
-	height = 500
+	width  = 400
+	height = 600
 	co     = color.RGBA{0, 200, 0, 0}
 
-	ticker = time.NewTicker(50 * time.Millisecond)
-	x, y   = 0, 0
+	ticker     = time.NewTicker(50 * time.Millisecond)
+	value      = 0
+	rightmostX = 0
 )
 
-// type of function to get next point to draw
-type getPointToDraw func() image.Point
+// type of function to get next Y value to draw
+type getYToDraw func() int
 
-func nextPointOnTicker() image.Point {
+func getYOnTicker() int {
 	<-ticker.C
-	xx, yy := x, y
-	x++
-	y++
-	return image.Pt(xx, yy)
+	y := value
+	value++
+	return y
 }
 
-func drawPoint(pt image.Point, canvas *xgraphics.Image, winID xproto.Window) {
-	canvas.Set(pt.X, pt.Y, co)
+func drawY(y int, canvas *xgraphics.Image, winID xproto.Window) {
+	if y > height {
+		y = height
+	}
+
+	canvas.Set(rightmostX, y, co)
 	canvas.XDraw()
 	canvas.XPaint(winID)
+
+	rightmostX++
 }
 
 func main() {
@@ -55,11 +61,11 @@ func main() {
 	win := canvas.XShowExtra("X11-GUI", true)
 	win.Listen(xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskKeyPress)
 
-	go func(op getPointToDraw) {
+	go func(op getYToDraw) {
 		for {
-			drawPoint(op(), canvas, win.Id)
+			drawY(op(), canvas, win.Id)
 		}
-	}(nextPointOnTicker)
+	}(getYOnTicker)
 
 	xevent.Main(X)
 
