@@ -14,12 +14,12 @@ import (
 
 	"github.com/BurntSushi/xgbutil"
 
-	"./web"
+	"./rs232"
 )
 
 var (
-	width  = 400
-	height = 600
+	width  = 600
+	height = 400
 	co     = color.RGBA{0, 200, 0, 0}
 	bg     = xgraphics.BGRA{R: 0x0, G: 0x0, B: 0x0, A: 0xff}
 
@@ -66,15 +66,17 @@ func main() {
 	win := canvas.XShowExtra("X11-GUI", true)
 	win.Listen(xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskKeyPress)
 
-	go func() {
-		web.StartServer(8777)
-	}()
+	//	go func() {
+	//		web.StartServer(8777)
+	//	}()
+
+	go rs232.StartSioReceiver("/dev/ttyUSB0", 115200)
 
 	go func(op getYToDraw) {
 		for {
 			drawY(op(), canvas, win.Id)
 		}
-	}(web.GetYOnPort)
+	}(rs232.GetY)
 
 	xevent.Main(X)
 
